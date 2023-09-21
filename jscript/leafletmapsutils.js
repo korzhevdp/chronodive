@@ -1,59 +1,31 @@
 $("#LMapsID").height($(window).height() + 'px');
 
-var map,
-	stockPile,
-	rippleIcon,
-	contours,
-	mapLayers,
-	markers,
+var map, stockPile, rippleIcon, contours, mapLayers, markers,
 	mouseDown        = 0,
 	mouseTick        = 0,
 	maxMouseTick     = 0,
 	skin             = 0,
 	clickPoint       = {},
-	visibleOptions   = {
-		fill         : true,
-		fillColor    : '#ffff00',
-		fillOpacity  : .2,
-		stroke       : true,
-		color        : '#ffff00',
-		weight       : 2
-	},
-	invisibleOptions = {
-		stroke       : false,
-		fill         : false
-	};
+	visibleOptions   = { fill: true, fillColor: '#ffff00', fillOpacity: .2, stroke: true, color: '#ffff00', weight: 2 },
+	invisibleOptions = { stroke: false, fill : false };
 
-function processMapClick(event, layer, zIndex) {
-	if ( isPointInsidePolygon(event, layer) ) {
+function processMapClick( event, layer, zIndex ) {
+	if ( isPointInsidePolygon( event, layer ) ) {
 		layerOptions = layer.options.semantics;
 		baseLayers[layerOptions.filename].setOpacity(0).setZIndex(zIndex).addTo(mapLayers);
 		stockPile.push( layerOptions );
-		title = layerOptions.datestamp + ", " +
-				layerOptions.BildNr +
-				"; полёт: " + layerOptions.flight +
-				", год: "   + layerOptions.year +
-				", кадр: "  + layerOptions.frame;
+		title = layerOptions.datestamp + ", " + layerOptions.BildNr + "; полёт: " + layerOptions.flight + ", год: "   + layerOptions.year + ", кадр: "  + layerOptions.frame;
 		$("#dateStamp").append('<span ref="' + layerOptions.id + '" title="' + title + '" class="datestampPlate">' + layerOptions.datestamp + '</span>');
 		$(".barcontainer").prepend('<div title="' + layerOptions.datestamp + '" class="meterpoints"></div>');
 		zIndex += 1;
 	}
 }
 
-function fillBaseLayers(data) {
+function fillBaseLayers( data ) {
 	for ( a in data.features ) {
 		object     = data.features[a];
 		URLPattern = 'https://www.signumtemporis.ru/tilebase/' + object.properties.filename + '/{z}/{x}/{y}.png';
-		baseLayers[object.properties.filename] = L.tileLayer(URLPattern, {
-			interactive   : false,
-			maxNativeZoom : 18,
-			minZoom       : 4,
-			id            : object.properties.id,
-			tms           : true,
-			opacity       : 0,
-			maxZoom       : 18,
-			attribution   : '&copy; KDP, &copy; NARA; JCC'
-		});
+		baseLayers[object.properties.filename] = L.tileLayer(URLPattern, { interactive: false, maxNativeZoom: 18, minZoom: 4, id: object.properties.id, tms: true, opacity: 0, maxZoom: 18, attribution: '&copy; KDP, &copy; NARA; JCC' });
 	}
 }
 
@@ -90,17 +62,8 @@ function addHandler(object, event, handler) {
 }
 
 function wheel(event) {
-	//console.log(mouseTick)
 	var delta,
 		event = event || window.event;
-		//event.preventDefault();
-		//event.stopPropagation();
-
-	//if (!event.ctrlKey) {
-	//	event.preventDefault();
-	//	event.stopPropagation();
-	//	return false;
-	//}
 
 	if ( event.wheelDelta ) {
 		delta = event.wheelDelta / 120;
@@ -118,25 +81,20 @@ function wheel(event) {
 	dissolve(delta);
 }
 
+function setContoursStyle( id, style ){
+	contours.eachLayer(function(layer) {
+		if (layer.options.semantics.id == id) {
+			layer.setStyle(visibleOptions);
+		}
+	});
+}
+
 function setDatestampListeners() {
 	$(".datestampPlate").mouseenter(function() {
-		var id = $(this).attr("ref");
-		//console.log('enter ' + id);
-		contours.eachLayer(function(layer) {
-			if (layer.options.semantics.id == id) {
-				layer.setStyle(visibleOptions);//.setZIndex(120);
-			}
-		});
+		setContoursStyle( $(this).attr("ref"), visibleOptions );
 	});
 	$(".datestampPlate").mouseleave(function() {
-		var id = $(this).attr("ref");
-		//console.log('leave ' + id);
-		contours.eachLayer(function(layer) {
-			if (layer.options.semantics.id == id) {
-				layer.unbindTooltip();
-				layer.setStyle(invisibleOptions);//.setZIndex(1);
-			}
-		});
+		setContoursStyle( $(this).attr("ref"), visibleOptions );
 	});
 	$(".datestampPlate").click(function() {
 		var ref = $(this).attr("ref");
@@ -155,16 +113,17 @@ function setDatestampListeners() {
 function dissolve(delta) {
 	mouseTick = (mouseTick <= maxMouseTick + delta) ? mouseTick - (delta * 4) : maxMouseTick;
 
+	if (mouseTick > maxMouseTick) {
+		mouseTick = maxMouseTick;
+		return false;
+	}
+
 	if ( mouseTick < 0 ) {
 		mouseTick = 0;
-		//$("#dateStamp").css("margin-top", "0");
-		//$("#techInfo").empty().html("E: Позиция:&nbsp;" + mouseTick + " (" + maxMouseTick + "),&nbsp;&nbsp;Активный слой:&nbsp;" + skin + ",&nbsp;&nbsp;Файл:&nbsp;" + stockPile[Math.floor(mouseTick / 200)].filename);
 		return false;
 	}
-	if ( stockPile === undefined ) {
-		return false;
-	}
-	if ( !stockPile.length ) {
+
+	if ( stockPile === undefined || !stockPile.length ) {
 		return false;
 	}
 
@@ -174,16 +133,11 @@ function dissolve(delta) {
 		$("#dateStamp").css("margin-top", "0");
 	}
 
-	if (mouseTick > maxMouseTick) {
-		mouseTick = maxMouseTick;
-		return false;
-	}
-	skin      = Math.floor(mouseTick / 200);
+
+	skin      =  Math.floor(mouseTick / 200);
 	opacity   = (Math.floor(mouseTick / 100) % 2) ? 1 : (mouseTick % 100) / 100 ;
 	depth     = 100 * (1 - (mouseTick / maxMouseTick));
 	$("#depthMeter").css("height", depth + "%");
-
-	//$("#techInfo").empty().html("Позиция:&nbsp;" + mouseTick + " (" + maxMouseTick + "),&nbsp;&nbsp;Активный слой:&nbsp;" + skin + ",&nbsp;&nbsp;Файл:&nbsp;" + stockPile[skin].filename + " * " + opacity);
 
 	$("#dateStamp").css("margin-top", (mouseTick / -4) + "px");
 
@@ -211,7 +165,6 @@ function dissolve(delta) {
 }
 
 function tracePressure(delta) {
-	//console.log(mouseTick, delta);
 	if (mouseTick > maxMouseTick) {
 		mouseTick = maxMouseTick;
 		mouseDown = 0;
@@ -225,15 +178,7 @@ function tracePressure(delta) {
 }
 
 function mapInit() {
-	map        = L.map('LMapsID', {
-		scrollWheelZoom	: false,
-		zoom			: 13,
-		maxZoom			: 18,
-		minZoom			: 4,
-		center			: L.latLng([64.54903030671586,40.55191040039063]),
-		crs				: L.CRS.EPSG3857,
-		worldCopyJump	: true
-	})
+	map        = L.map( 'LMapsID', { scrollWheelZoom : false, zoom: 13, maxZoom: 18, minZoom: 4, center: L.latLng([64.5490,40.5519]), crs: L.CRS.EPSG3857, worldCopyJump	: true } )
 	.on('contextmenu', function(e) {
 		console.log("[" + e.latlng.lat + "," + e.latlng.lng + "]");
 	})
@@ -244,7 +189,6 @@ function mapInit() {
 		mouseTick    = 0;
 		markers.clearLayers();
 		mapLayers.clearLayers();
-		//map.panTo(clickPoint, { animate: true, duration: 2.5 });
 		$("#dateStamp").empty().append('<span ref="0" class="datestampPlate">Современность</span>').css("margin-top", "0");
 		$("#depthMeter").css("height", "100%");
 		$(".grayscale img").css("filter", "grayscale(0)");
@@ -262,14 +206,7 @@ function mapInit() {
 	markers    = L.featureGroup().addTo(map);
 
 	baseLayers = {
-		sat : L.tileLayer('https://mt1.google.com/vt/lyrs=s&hl=ru&x={x}&y={y}&z={z}&s=Galileo', {
-			maxNativeZoom	: 18,
-			minZoom			:  4,
-			opacity			: 1,
-			maxZoom			: 18,
-			className		: 'grayscale',
-			attribution		: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-		})
+		sat : L.tileLayer('https://mt1.google.com/vt/lyrs=s&hl=ru&x={x}&y={y}&z={z}&s=Galileo', { maxNativeZoom: 18, minZoom: 4, opacity: 1, maxZoom: 18, className: 'grayscale', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'})
 	};
 
 	baseLayers['sat'].addTo(map);
@@ -311,7 +248,6 @@ $( "#Help" ).click(function(e) {
 });
 
 $( ".progressbarContainer" ).click(function(e) {
-	//console.log($(this).offset(), e);
 	if ( maxMouseTick == 0) {
 		return false;
 	}
@@ -319,7 +255,6 @@ $( ".progressbarContainer" ).click(function(e) {
 		vPosition = e.clientY - vOffset;
 	mouseTick = Math.trunc((maxMouseTick * (vPosition / 300) / 4) - 1) * 4;
 	dissolve(0)
-	//console.log(fractionOffset);
 });
 
 $(".timeControlBtn").on("mousedown touchstart", function(event) {
@@ -332,9 +267,7 @@ $(".timeControlBtn").on("mousedown touchstart", function(event) {
 });
 
 $(".timeControlBtn").on("mouseup touchend mouseleave", function(event) {
-	//event.preventDefault();
 	mouseDown = 0;
-	//console.log("mouse up");
 });
 
 addHandler(window  , 'DOMMouseScroll', wheel);
