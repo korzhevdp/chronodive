@@ -11,6 +11,7 @@ var map, stockPile, rippleIcon, contours, mapLayers, markers,
 
 function processMapClick( event, layer, zIndex ) {
 	if ( isPointInsidePolygon( event, layer ) ) {
+		console.log(123)
 		layerOptions = layer.options.semantics;
 		baseLayers[layerOptions.filename].setOpacity(0).setZIndex(zIndex).addTo(mapLayers);
 		stockPile.push( layerOptions );
@@ -61,13 +62,12 @@ function addHandler(object, event, handler) {
 	}
 }
 
-function wheel(event) {
+function wheel( event ) {
 	var delta,
 		event = event || window.event;
 
 	if ( event.wheelDelta ) {
-		delta = event.wheelDelta / 120;
-		if (window.opera) { delta = -delta };
+		delta = event.wheelDelta / 120 * ( (window.opera) ? -1 : 1 );
 	}
 
 	if ( event.detail ) {
@@ -145,12 +145,11 @@ function dissolve(delta) {
 	if ( stockPile[skin] !== undefined ) {
 		baseLayers[stockPile[skin].filename].setOpacity(opacity);
 		if ( map.getZoom() < stockPile[skin].minZoom ) {
-			targetZoom = stockPile[skin].minZoom;
+			map.setView(clickPoint, stockPile[skin].minZoom);
 		}
 		if ( map.getZoom() > stockPile[skin].maxZoom ) {
-			targetZoom = stockPile[skin].maxZoom;
+			map.setView(clickPoint, stockPile[skin].maxZoom);
 		}
-		map.setView(clickPoint, targetZoom );
 	}
 	//Управление прозрачностью иных слоёв
 	for ( a in stockPile ) {
@@ -177,40 +176,25 @@ function tracePressure(delta) {
 	}, 100);
 }
 
-function mapInit() {
-	map        = L.map( 'LMapsID', { scrollWheelZoom : false, zoom: 13, maxZoom: 18, minZoom: 4, center: L.latLng([64.5490,40.5519]), crs: L.CRS.EPSG3857, worldCopyJump	: true } )
-	.on('contextmenu', function(e) {
-		console.log("[" + e.latlng.lat + "," + e.latlng.lng + "]");
-	})
-	.on('click', function(event) {
-		var zIndex   = 2;
-		clickPoint   = event.latlng;
-		stockPile    = [];
-		mouseTick    = 0;
-		markers.clearLayers();
-		mapLayers.clearLayers();
-		$("#dateStamp").empty().append('<span ref="0" class="datestampPlate">Современность</span>').css("margin-top", "0");
-		$("#depthMeter").css("height", "100%");
-		$(".grayscale img").css("filter", "grayscale(0)");
-		L.marker( event.latlng, { icon : rippleIcon } ).addTo(markers);
-		setTimeout(function() { markers.clearLayers(); }, 7400);
-		contours.eachLayer(function(layer) { processMapClick(event, layer, zIndex); });
-		$(".meterpoints").css( "height", 100 / stockPile.length + "%" );
-		setDatestampListeners();
-		maxMouseTick  = (stockPile.length) * 200;
-	});
-	rippleIcon = L.icon({ iconUrl: '/chronodive/images/ripple77.gif', iconSize: [300, 300], iconAnchor: [150, 150] });
-	starIcon   = L.icon({ iconUrl: '/chronodive/images/bullet_red.png', iconSize: [32, 32], iconAnchor: [16, 16] });
-	contours   = L.featureGroup().addTo(map);
-	mapLayers  = L.featureGroup().addTo(map);
-	markers    = L.featureGroup().addTo(map);
+function setupMapClick(event) {
+	var zIndex   = 2;
+	clickPoint   = event.latlng;
+	stockPile    = [];
+	mouseTick    = 0;
+	markers.clearLayers();
+	mapLayers.clearLayers();
+	L.marker( event.latlng, { icon : rippleIcon } ).addTo(markers);
+	setTimeout(function() { markers.clearLayers(); }, 7400);
+	$("#dateStamp").empty().append('<span ref="0" class="datestampPlate">Современность</span>').css("margin-top", "0");
+	contours.eachLayer(function(layer) { processMapClick(event, layer, zIndex); });
+	maxMouseTick  = (stockPile.length) * 200;
+	$("#depthMeter").css("height", "100%");
+	$(".grayscale img").css("filter", "grayscale(0)");
+	$(".meterpoints").css( "height", 100 / stockPile.length + "%" );
+	setDatestampListeners();
+}
 
-	baseLayers = {
-		sat : L.tileLayer('https://mt1.google.com/vt/lyrs=s&hl=ru&x={x}&y={y}&z={z}&s=Galileo', { maxNativeZoom: 18, minZoom: 4, opacity: 1, maxZoom: 18, className: 'grayscale', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'})
-	};
-
-	baseLayers['sat'].addTo(map);
-
+function requestRastersData() {
 	$.ajax({
 		url      : 'https://www.signumtemporis.ru/chronodive/rasters.geojson',
 		type     : 'GET',
@@ -232,6 +216,31 @@ function mapInit() {
 		},
 		error: function(data,stat,err){}
 	});
+
+}
+
+function mapInit() {
+	map        = L.map( 'LMapsID', { scrollWheelZoom : false, zoom: 13, maxZoom: 18, minZoom: 4, center: L.latLng([64.5490,40.5519]), crs: L.CRS.EPSG3857, worldCopyJump	: true } )
+	.on('contextmenu', function(e) {
+		console.log("[" + e.latlng.lat + "," + e.latlng.lng + "]");
+	})
+	.on('click', function(event) {
+		setupMapClick(event)
+	});
+	rippleIcon = L.icon({ iconUrl: '/chronodive/images/ripple77.gif', iconSize: [300, 300], iconAnchor: [150, 150] });
+	starIcon   = L.icon({ iconUrl: '/chronodive/images/bullet_red.png', iconSize: [32, 32], iconAnchor: [16, 16] });
+	contours   = L.featureGroup().addTo(map);
+	mapLayers  = L.featureGroup().addTo(map);
+	markers    = L.featureGroup().addTo(map);
+
+	baseLayers = {
+		sat : L.tileLayer('https://mt1.google.com/vt/lyrs=s&hl=ru&x={x}&y={y}&z={z}&s=Galileo', { maxNativeZoom: 18, minZoom: 4, opacity: 1, maxZoom: 18, className: 'grayscale', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'})
+	};
+
+	baseLayers['sat'].addTo(map);
+
+	requestRastersData();
+
 };
 
 $(".closeLayerInfo").click(function() {
