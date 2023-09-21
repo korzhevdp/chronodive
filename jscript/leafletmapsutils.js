@@ -191,11 +191,12 @@ function dissolve(delta) {
 	if ( stockPile[skin] !== undefined ) {
 		baseLayers[stockPile[skin].filename].setOpacity(opacity);
 		if ( map.getZoom() < stockPile[skin].minZoom ) {
-			map.setView(clickPoint, stockPile[skin].minZoom );
+			targetZoom = stockPile[skin].minZoom;
 		}
 		if ( map.getZoom() > stockPile[skin].maxZoom ) {
-			map.setView(clickPoint, stockPile[skin].maxZoom );
+			targetZoom = stockPile[skin].maxZoom;
 		}
+		map.setView(clickPoint, targetZoom );
 	}
 	//Управление прозрачностью иных слоёв
 	for ( a in stockPile ) {
