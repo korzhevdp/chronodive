@@ -144,7 +144,18 @@ function dissolve( delta ) {
 	skin      =  Math.floor(mouseTick / 200);
 	opacity   = (Math.floor(mouseTick / 100) % 2) ? 1 : (mouseTick % 100) / 100 ;
 	processStockPile(skin, opacity);
+}
 
+function processOtherLayers() {
+	for ( a in stockPile ) {
+		if ( a == skin || a == skin-1 || a == skin-2 ) {
+			if ( stockPile[skin-2] === undefined ) {
+				continue;
+			}
+			baseLayers[stockPile[skin-2].filename].setOpacity(1 - opacity);
+		}
+		baseLayers[stockPile[a].filename].setOpacity(0);
+	}
 }
 
 function processStockPile(skin, opacity){
@@ -161,15 +172,7 @@ function processStockPile(skin, opacity){
 		map.setView(clickPoint, stockPile[skin].maxZoom);
 	}
 	//Управление прозрачностью иных слоёв
-	for ( a in stockPile ) {
-		if ( a == skin || a == skin-1 || a == skin-2 ) {
-			if ( stockPile[skin-2] === undefined ) {
-				continue;
-			}
-			baseLayers[stockPile[skin-2].filename].setOpacity(1 - opacity);
-		}
-		baseLayers[stockPile[a].filename].setOpacity(0);
-	}
+	processOtherLayers();
 
 }
 
