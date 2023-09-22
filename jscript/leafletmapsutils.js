@@ -110,6 +110,10 @@ function setDatestampListeners() {
 }
 
 function processMouseTick( delta ) {
+	if ( !stockPile.length ) {
+		return false;
+	}
+
 	mouseTick = (mouseTick <= maxMouseTick + delta) ? mouseTick - (delta * 4) : maxMouseTick;
 
 	if (mouseTick > maxMouseTick) {
@@ -117,18 +121,12 @@ function processMouseTick( delta ) {
 		return false;
 	}
 
-	if ( mouseTick < 0 ) {
+	if ( mouseTick <= 0 ) {
 		mouseTick = 0;
-		return false;
-	}
-
-	if ( stockPile === undefined || !stockPile.length ) {
-		return false;
-	}
-
-	if ( mouseTick == 0 ) {
 		$("#dateStamp").css("margin-top", "0");
+		return false;
 	}
+
 	$(".grayscale img").css("filter", "grayscale(" + (( mouseTick < 100 ) ? mouseTick / 100 : 1 ) + ")");
 	$("#dateStamp").css("margin-top", (mouseTick / -4) + "px");
 	return true;
