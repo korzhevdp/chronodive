@@ -147,24 +147,26 @@ function dissolve( delta ) {
 
 }
 
-function processStockPile(){
+function processStockPile(skin, opacity){
 		//Управление прозрачностью слоя.
-	if ( stockPile[skin] !== undefined ) {
-		baseLayers[stockPile[skin].filename].setOpacity(opacity);
-		if ( map.getZoom() < stockPile[skin].minZoom ) {
-			map.setView(clickPoint, stockPile[skin].minZoom);
-		}
-		if ( map.getZoom() > stockPile[skin].maxZoom ) {
-			map.setView(clickPoint, stockPile[skin].maxZoom);
-		}
+	if ( stockPile[skin] === undefined ) {
+		return false;
+	}
+	baseLayers[stockPile[skin].filename].setOpacity(opacity);
+
+	if ( map.getZoom() < stockPile[skin].minZoom ) {
+		map.setView(clickPoint, stockPile[skin].minZoom);
+	}
+	if ( map.getZoom() > stockPile[skin].maxZoom ) {
+		map.setView(clickPoint, stockPile[skin].maxZoom);
 	}
 	//Управление прозрачностью иных слоёв
 	for ( a in stockPile ) {
 		if ( a == skin || a == skin-1 || a == skin-2 ) {
-			if ( stockPile[skin-2] !== undefined ) {
-				baseLayers[stockPile[skin-2].filename].setOpacity(1 - opacity);
+			if ( stockPile[skin-2] === undefined ) {
+				continue;
 			}
-			continue;
+			baseLayers[stockPile[skin-2].filename].setOpacity(1 - opacity);
 		}
 		baseLayers[stockPile[a].filename].setOpacity(0);
 	}
