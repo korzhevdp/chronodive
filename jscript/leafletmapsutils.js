@@ -195,27 +195,29 @@ function setupMapClick( event ) {
 	setDatestampListeners();
 }
 
+function featureSorter(x, y) {
+	if (x.properties.zIndex > y.properties.zIndex) { return -1; }
+	if (x.properties.zIndex < y.properties.zIndex) { return  1; }
+	return 0;
+}
+
 function requestRastersData() {
 	$.ajax({
 		url      : 'https://www.signumtemporis.ru/chronodive/rasters.geojson',
 		type     : 'GET',
 		dataType : 'json',
-		success  : function(data) {
-			data.features.sort(function(x, y) {
-				if (x.properties.zIndex > y.properties.zIndex) { return -1; }
-				if (x.properties.zIndex < y.properties.zIndex) { return  1; }
-				return 0;
-			});
-			L.geoJSON(data, {
+		success  : function( data ) {
+			data.features.sort( featureSorter(x, y) );
+			L.geoJSON( data, {
 				style         : invisibleOptions,
-				onEachFeature : function (feature, layer) {
+				onEachFeature : function ( feature, layer ) {
 					layer.options.semantics = feature.properties;
 					layer.addTo(contours);
 				}
 			});
 			fillBaseLayers(data);
 		},
-		error: function(data,stat,err){}
+		error: function(data, stat, err){}
 	});
 }
 
