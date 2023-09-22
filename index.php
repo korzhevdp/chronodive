@@ -103,6 +103,7 @@
 		<script type="text/javascript" src="/chronodive/jscript/jquery.js"></script>
 		<script type="text/javascript" src="/chronodive/jscript/leaflet.js"></script>
 		<script type="text/javascript" src="/chronodive/jscript/leafletmapsutils.js"></script>
+		<script type="text/javascript" src="/chronodive/jscript/ui.js"></script>
 		<?php include("../includes/metrika.php");?>
 
 	</body>
