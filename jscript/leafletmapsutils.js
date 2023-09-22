@@ -127,9 +127,14 @@ function processMouseTick( delta ) {
 		return false;
 	}
 
+	setupUIElements()
+	return true;
+}
+
+function setupUIElements() {
+	$("#depthMeter").css("height", 100 * (1 - (mouseTick / maxMouseTick)) + "%");
 	$(".grayscale img").css("filter", "grayscale(" + (( mouseTick < 100 ) ? mouseTick / 100 : 1 ) + ")");
 	$("#dateStamp").css("margin-top", (mouseTick / -4) + "px");
-	return true;
 }
 
 function dissolve( delta ) {
@@ -138,11 +143,12 @@ function dissolve( delta ) {
 	};
 	skin      =  Math.floor(mouseTick / 200);
 	opacity   = (Math.floor(mouseTick / 100) % 2) ? 1 : (mouseTick % 100) / 100 ;
-	depth     = 100 * (1 - (mouseTick / maxMouseTick));
+	processStockPile(skin, opacity);
 
-	$("#depthMeter").css("height", depth + "%");
+}
 
-	//Управление прозрачностью слоя.
+function processStockPile(){
+		//Управление прозрачностью слоя.
 	if ( stockPile[skin] !== undefined ) {
 		baseLayers[stockPile[skin].filename].setOpacity(opacity);
 		if ( map.getZoom() < stockPile[skin].minZoom ) {
@@ -154,7 +160,7 @@ function dissolve( delta ) {
 	}
 	//Управление прозрачностью иных слоёв
 	for ( a in stockPile ) {
-		if (a == skin || a == skin-1 || a == skin-2 ) {
+		if ( a == skin || a == skin-1 || a == skin-2 ) {
 			if ( stockPile[skin-2] !== undefined ) {
 				baseLayers[stockPile[skin-2].filename].setOpacity(1 - opacity);
 			}
@@ -162,6 +168,7 @@ function dissolve( delta ) {
 		}
 		baseLayers[stockPile[a].filename].setOpacity(0);
 	}
+
 }
 
 function tracePressure( delta ) {
@@ -195,10 +202,14 @@ function setupMapClick( event ) {
 	setDatestampListeners();
 }
 
-function featureSorter(x, y) {
-	if (x.properties.zIndex > y.properties.zIndex) { return -1; }
-	if (x.properties.zIndex < y.properties.zIndex) { return  1; }
-	return 0;
+function processGeoSJON(data) {
+	L.geoJSON( data, {
+		style         : invisibleOptions,
+		onEachFeature : function ( feature, layer ) {
+			layer.options.semantics = feature.properties;
+			layer.addTo(contours);
+		}
+	});
 }
 
 function requestRastersData() {
@@ -207,14 +218,12 @@ function requestRastersData() {
 		type     : 'GET',
 		dataType : 'json',
 		success  : function( data ) {
-			data.features.sort( featureSorter(x, y) );
-			L.geoJSON( data, {
-				style         : invisibleOptions,
-				onEachFeature : function ( feature, layer ) {
-					layer.options.semantics = feature.properties;
-					layer.addTo(contours);
-				}
-			});
+			data.features.sort( function(x, y) {
+				if (x.properties.zIndex > y.properties.zIndex) { return -1; }
+				if (x.properties.zIndex < y.properties.zIndex) { return  1; }
+				return 0;
+			} );
+			processGeoSJON(data);
 			fillBaseLayers(data);
 		},
 		error: function(data, stat, err){}
