@@ -30,7 +30,7 @@ function fillBaseLayers( data ) {
 	}
 }
 
-function isPointInsidePolygon(point, polygon) {
+function isPointInsidePolygon( point, polygon ) {
 	var polyPoints = polygon.getLatLngs(),
 		x          = point.latlng.lat,
 		y          = point.latlng.lng,
@@ -47,7 +47,7 @@ function isPointInsidePolygon(point, polygon) {
 	return inside;
 }
 
-function addHandler(object, event, handler) {
+function addHandler( object, event, handler ) {
 	var added = false;
 	if ( object.addEventListener ) {
 		object.addEventListener(event, handler, {passive: false});
@@ -109,7 +109,7 @@ function setDatestampListeners() {
 	});
 }
 
-function dissolve(delta) {
+function processMouseTick( delta ) {
 	mouseTick = (mouseTick <= maxMouseTick + delta) ? mouseTick - (delta * 4) : maxMouseTick;
 
 	if (mouseTick > maxMouseTick) {
@@ -126,19 +126,23 @@ function dissolve(delta) {
 		return false;
 	}
 
-	$(".grayscale img").css("filter", "grayscale(" + (( mouseTick < 100 ) ? mouseTick / 100 : 1 ) + ")");
-
 	if ( mouseTick == 0 ) {
 		$("#dateStamp").css("margin-top", "0");
 	}
+	$(".grayscale img").css("filter", "grayscale(" + (( mouseTick < 100 ) ? mouseTick / 100 : 1 ) + ")");
+	$("#dateStamp").css("margin-top", (mouseTick / -4) + "px");
+	return true;
+}
 
-
+function dissolve( delta ) {
+	if ( !processMouseTick( delta ) ) {
+		return false;
+	};
 	skin      =  Math.floor(mouseTick / 200);
 	opacity   = (Math.floor(mouseTick / 100) % 2) ? 1 : (mouseTick % 100) / 100 ;
 	depth     = 100 * (1 - (mouseTick / maxMouseTick));
-	$("#depthMeter").css("height", depth + "%");
 
-	$("#dateStamp").css("margin-top", (mouseTick / -4) + "px");
+	$("#depthMeter").css("height", depth + "%");
 
 	//Управление прозрачностью слоя.
 	if ( stockPile[skin] !== undefined ) {
@@ -162,7 +166,7 @@ function dissolve(delta) {
 	}
 }
 
-function tracePressure(delta) {
+function tracePressure( delta ) {
 	if (mouseTick > maxMouseTick) {
 		mouseTick = maxMouseTick;
 		mouseDown = 0;
@@ -175,7 +179,7 @@ function tracePressure(delta) {
 	}, 100);
 }
 
-function setupMapClick(event) {
+function setupMapClick( event ) {
 	var zIndex   = 2;
 	clickPoint   = event.latlng;
 	stockPile    = [];
@@ -215,7 +219,6 @@ function requestRastersData() {
 		},
 		error: function(data,stat,err){}
 	});
-
 }
 
 function mapInit() {
@@ -239,8 +242,7 @@ function mapInit() {
 	baseLayers['sat'].addTo(map);
 
 	requestRastersData();
-
-};
+}
 
 addHandler(window  , 'DOMMouseScroll', wheel);
 addHandler(window  , 'mousewheel'    , wheel);
